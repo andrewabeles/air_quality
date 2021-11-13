@@ -1,4 +1,4 @@
-# air_quality  
+# Air Quality Forecasting  
 
 Modeling and forecasting daily air quality.  
 
