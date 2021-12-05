@@ -115,3 +115,73 @@ sarima(PM2.5, p=1, d=0, q=0)
 
 There are some problems with this model. The tail ends of the residuals deviate quite significantly from the normal distribution, according to the Q-Q plot. Furthermore, the p values of the Ljung-Box statistic are all under .05, which suggests autocorrelation within the residuals.
 
+On the other hand, we can search for the optimal lag length using AIC.
+
+```{r}
+VARselect(PM2.5,lag.max=50, type="const")
+```
+
+The optimal lag length is 19 by AIC.
+
+
+```{r}
+sarima(PM2.5, p=19, d=0, q=0)
+```
+
+The diagnostic plots for AR(19) show that the residuals have no significant autocorrelations, follow roughly normal, and all Ljung-Box statistics are larger than the threshold p-value. AR(19) seems to track the series well with the proper residuals.
+
+Seasonal ARIMA
+
+The decomposition of the time series suggests that there is a daily seaonality in a year. 
+
+
+```{r}
+sarima(PM2.5,
+       p = 1, d = 0, q = 1, P = 0, 
+       D = 1, Q = 0, S = 365.25)
+```
+
+Alternatively, ARMA with yearly dummy:
+
+
+```{r}
+year_dummies <- dummy_cols(year)
+names(year_dummies) <- c("year", "2016", "2017", "2018", "2019", "2020")
+
+AICs <- c()
+for (p in 1:30) {
+  AICs <- c(AICs, arima(PM2.5, order=c(p, 0, 0), xreg=year_dummies[,c("2017", "2018", "2019", "2020")])$aic)
+  cat("AR(", p, "): AIC=",AICs[p], "\n")
+}
+
+plot(AICs, type="b")
+```
+
+With yearly dummy variables, AR(19) has the smallest AIC of 14077.08.
+
+
+```{r}
+arima(PM2.5, order=c(19, 0, 0), xreg=year_dummies[,c("2017", "2018", "2019", "2020")])
+```
+
+
+we can manually examine yearly lag airquailty obtained by taking a differene with 365th lagged term.
+
+```{r}
+acf2(yearly_lagged_PM2.5, max.lag=100)
+```
+
+ACF and PACF from the seanality removed series still suggest that the the PM2.5 follows AR(p) of some order p
+
+```{r}
+VARselect(yearly_lagged_PM2.5, lag.max=50, type="const")
+```
+
+
+The AIC tells that the seasnality removed series follows AR(p) of order only p = 5 instead of 19,
+
+
+```{r}
+arima(yearly_lagged_PM2.5, order=c(5, 0, 0))
+```
+This model has a AIC of 12240.69.
