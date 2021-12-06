@@ -11,6 +11,8 @@ library(ggplot2)
 library(plotly)
 library(astsa)
 library(tseries)
+library(vars)
+library(fastDummies)
 ```
 
 ```{r}
@@ -145,7 +147,7 @@ Alternatively, ARMA with yearly dummy:
 
 
 ```{r}
-year_dummies <- dummy_cols(year)
+year_dummies <- dummy_cols(airquality$Year)
 names(year_dummies) <- c("year", "2016", "2017", "2018", "2019", "2020")
 
 AICs <- c()
