@@ -184,4 +184,14 @@ The AIC tells that the seasnality removed series follows AR(p) of order only p =
 ```{r}
 arima(yearly_lagged_PM2.5, order=c(5, 0, 0))
 ```
-This model has a AIC of 12240.69.
+This model has a AIC of 12240.69 and the best model so far.
+
+# TBATS model
+
+```{r}
+fit <- tbats(PM2.5)
+fit
+fit$AIC 
+```
+Creating BATS model, however in that model, the AIC is a lot bigger than the AR(19) with seasonality taken into account. BATS model is more generalzed version of ARIMA just like ARMA is a generalizatino of AR and ARIMA is a generalization of ARMA. 
+
