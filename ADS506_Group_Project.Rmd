@@ -131,7 +131,7 @@ It is because ACF and PACF plots suggest the series follows ARMA(p, 0) for some 
 sarima(PM2.5, p=19, d=0, q=0)
 ```
 
-The diagnostic plots for AR(19) show that the residuals have no significant autocorrelations, follow roughly normal, and all Ljung-Box statistics are larger than the threshold p-value. AR(19) seems to track the series well with the proper residuals.
+The diagnostic plots for AR(19) show that the residuals have no significant autocorrelations, follow roughly normal, and all Ljung-Box statistics are larger than the threshold p-value. AR(19) seems to track the series well with the proper residuals.This model has AIC of 14075.71.
 
 # Seasonal ARIMA
 
