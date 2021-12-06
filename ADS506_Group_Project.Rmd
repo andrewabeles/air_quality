@@ -13,7 +13,14 @@ library(astsa)
 library(tseries)
 library(vars)
 library(fastDummies)
+library(forecast)
 ```
+
+```{r}
+# load dataset
+airquality <- read.csv('SD_airquality_2016-2020.csv')
+```
+
 
 ```{r}
 # data summary
@@ -144,22 +151,22 @@ sarima(PM2.5,
        D = 1, Q = 0, S = 365.25)
 ```
 
-we can manually examine yearly lag airquailty obtained by taking a differene with 365th lagged term.
+We can manually examine yearly lag airquailty obtained by taking a difference with 365th lagged term.
 
 ```{r}
-acf2(yearly_lagged_PM2.5, max.lag=100)
+acf2(PM2.5, max.lag=100)
 ```
 
 ACF and PACF from the seanality removed series still suggest that the the PM2.5 follows AR(p) of some order p
 
 ```{r}
-VARselect(yearly_lagged_PM2.5, lag.max=50, type="const")
+VARselect(PM2.5, lag.max=50, type="const")
 ```
 
 The AIC tells that the seasnality removed series follows AR(p) of order only p = 5 instead of 19,
 
 ```{r}
-arima(yearly_lagged_PM2.5, order=c(5, 0, 0))
+arima(PM2.5, order=c(5, 0, 0))
 ```
 This model ARIMA has a AIC of 12240.69 and the best model so far.
 
@@ -170,9 +177,13 @@ fit <- tbats(PM2.5)
 fit
 fit$AIC 
 ```
-Creating BATS model, however in that model, the AIC is a lot bigger than the AR(19) with seasonality taken into account. BATS model is more generalzed version of ARIMA just like ARMA is a generalizatino of AR and ARIMA is a generalization of ARMA. 
+Creating BATS model, however in that model, the AIC is a lot bigger than the AR(19) with seasonality taken into account. BATS model is more generalized version of ARIMA just like ARMA is a generalization of AR and ARIMA is a generalization of ARMA. 
 
 BATS choose ARMA(2,1) but has a rather larger AIC = 22551.15.
+
+
+
+
 
 y <- msts(PM2.5, seasonal.periods=c(7,30.4375,365.25))
 fit <- tbats(y)
