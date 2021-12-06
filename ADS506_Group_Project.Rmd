@@ -122,7 +122,7 @@ VARselect(PM2.5,lag.max=50, type="const")
 ```
 
 The optimal lag length is 19 by AIC.
-
+It is because ACF and PACF plots suggest the series follows ARMA(p, 0) for some order p, I looped through the estimation AR(p) with p = 1 to 25, and the A(p=19) has the smallest AIC. A better model has a smaller AIC (and also smaller BIC)
 
 ```{r}
 sarima(PM2.5, p=19, d=0, q=0)
