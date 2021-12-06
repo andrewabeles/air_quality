@@ -1,6 +1,6 @@
 ---
-title: "ADS 506 Group Project"
-author: "Andrew Abeles"
+title: "Forecasting Daily PM2.5 Levels in San Diego"
+author: "Eva Chow, Sai Thiha, and Andrew Abeles"
 date: "11/30/2021"
 output: html_document
 ---
@@ -15,6 +15,8 @@ library(vars)
 library(fastDummies)
 library(forecast)
 ```
+
+# Data Preparation and Exploration
 
 ```{r}
 # load dataset
@@ -46,22 +48,21 @@ firstfigure <- ggplotly(firstfigure)
 firstfigure
 ```
 
-# OBSERVATIONS:
-# - quick observations show that many peak PM2.5 readings occur in Q4 of the year
-# - interestingly, some of the lowest readings occur around MAR/APR
-# - sharp decrease in PM2.5 readings in MAR 2020 (possibly related to COVID lockdowns?)
-# - max PM2.5 reading from SEP-OCT 2020 (coinciding with fires)
-
-# year comparisons of PM2.5
-# add additional columns for year and day of the year
+OBSERVATIONS:
+- quick observations show that many peak PM2.5 readings occur in Q4 of the year
+- interestingly, some of the lowest readings occur around MAR/APR
+- sharp decrease in PM2.5 readings in MAR 2020 (possibly related to COVID lockdowns?)
+- max PM2.5 reading from SEP-OCT 2020 (coinciding with fires)
 
 ```{r}
+# add additional columns for year and day of the year
 airquality <- transform(airquality,
                         Year = format(Date, '%Y'),
                         DayOfYear = as.numeric(format(Date, '%j')))
 ```
 
 ```{r}
+#year comparisons of PM2.5
 secondfigure <- airquality %>%
   ggplot( aes(x=DayOfYear, y=PM2.5.AQI.Value, group=Year, colour=Year)) +
   geom_point() + 
@@ -76,14 +77,14 @@ secondfigure <- ggplotly(secondfigure)
 secondfigure
 ```
 
-# OBSERVATIONS:
-# - 2016 has erratic readings during Q1, including both highest and lowest PM2.5 of that year
-# - 2017 has peak readings during last two months of year
-# - 2018 has peaks around JUL and from DEC-FEB
-# - 2019 peaks around OCT, but has noticeably less variation in spikes compared to previous years
-# - 2020 has the biggest range, with the lowest of the 5 year readings occurring MAR2020 and the highest occuring SEP2020
-# - 2020 has a general trend upwards as year progresses (random walk?)
-# majority of PM2.5 readings occur between 50-100
+OBSERVATIONS:
+- 2016 has erratic readings during Q1, including both highest and lowest PM2.5 of that year
+- 2017 has peak readings during last two months of year
+- 2018 has peaks around JUL and from DEC-FEB
+- 2019 peaks around OCT, but has noticeably less variation in spikes compared to previous years
+- 2020 has the biggest range, with the lowest of the 5 year readings occurring MAR2020 and the highest occuring SEP2020
+- 2020 has a general trend upwards as year progresses (random walk?)
+majority of PM2.5 readings occur between 50-100
 
 Let's create a time series object for the daily PM2.5 data. 
 ```{r}
@@ -95,12 +96,16 @@ PM2.5 <- ts(
 PM2.5
 ```
 
+## Stationarity 
+
 ```{r}
 # Augmented Dickey-Fuller test 
 adf.test(PM2.5)
 ```
 
 The p-value is 0.01, so we can reject the null hypothesis that the time series has a unit root in favor of the alternative hypothesis that the time series is stationary. 
+
+## Decomposition
 
 ```{r}
 # Decompose time series into trend, seasonality, and noise 
@@ -110,12 +115,18 @@ plot(PM2.5_comps)
 
 The ADF test suggested the series is stationary; however, the decomposition reveals an upward trend and annual seasonality. 
 
+## Autocorrelation 
+
 ```{r}
 # ACF and PACF plots (lag=365 selected to represent a year)
 acf2(PM2.5, 365.25, main='ACF & PACF')
 ```
 
 The autocorrelation at lag 1 is very strong. The ACF tails off, while the PACF cuts off after lag 1, which suggests an AR(1) model. Let's try it out. 
+
+# Modeling 
+
+## Autoregression
 
 ```{r}
 # AR(1) model 
@@ -124,72 +135,77 @@ sarima(PM2.5, p=1, d=0, q=0)
 
 There are some problems with this model. The tail ends of the residuals deviate quite significantly from the normal distribution, according to the Q-Q plot. Furthermore, the p values of the Ljung-Box statistic are all under .05, which suggests autocorrelation within the residuals.
 
-On the other hand, we can search for the optimal lag length using AIC.
-# AIC
+Let's try taking the log of the series first to see if that will help normalize the residuals.
+
+```{r}
+sarima(log(PM2.5), 1, 0, 0)
+```
+
+Taking the log actually made the residuals even less normal. Let's try taking the first difference. 
+
+```{r}
+sarima(PM2.5, 1, 1, 0)
+```
+
+That didn't solve the problem either. Let's try taking both the log and the first difference.
+
+```{r}
+sarima(log(PM2.5), 1, 1, 0)
+```
+
+No luck. 
+
+Instead of trying to normalize the residuals and remove their autocorrelation, we can search for the optimal lag length using AIC, which balances minimizing model variance with minimizing model complexity. 
 
 ```{r}
 VARselect(PM2.5,lag.max=50, type="const")
 ```
 
-The optimal lag length is 19 by AIC.
-It is because ACF and PACF plots suggest the series follows ARMA(p, 0) for some order p, I looped through the estimation AR(p) with p = 1 to 25, and the A(p=19) has the smallest AIC. A better model has a smaller AIC (and also smaller BIC)
+The optimal lag length is 19 based on AIC. Let's try it out. 
 
 ```{r}
-arima(PM2.5, order=c(19, 0, 0))
+sarima(PM2.5, 19, 0, 0)
 ```
 
-The diagnostic plots for AR(19) show that the residuals have no significant autocorrelations, follow roughly normal, and all Ljung-Box statistics are larger than the threshold p-value. AR(19) seems to track the series well with the proper residuals.This model has AIC of 14075.71.
+The diagnostic plots for AR(19) show that the residuals have no significant autocorrelations, and all Ljung-Box statistics are larger than the threshold p-value. The tails of the residuals distribution do however still deviate from normality. This model has an AIC of 14075.71.
 
-# Seasonal ARIMA
+## Seasonality-Removed Autoregression
 
-The decomposition of the time series suggests that there is a daily seaonality in a year. However, `sarima` does not allow for the seasonality of more than 350 frequency. Note that `S = 7` means that a weekly pattern and `S = 30` means a monthly patter. We try to see if a model with  monthly (seasonal) pattern works, and it does not.
-
+The decomposition of the time series suggests that there is yearly seasonality. We can manually examine yearly lagged PM2.5 obtained by taking a difference with 365th lagged term.
 
 ```{r}
-sarima(PM2.5,
-       p = 1, d = 0, q = 1, P = 0, 
-       D = 1, Q = 0, S = 365.25)
+PM2.5_yearly_lagged <- diff(PM2.5, lag=365) 
+tsplot(PM2.5_yearly_lagged, main="Seasonality-Removed PM2.5", ylab="")
 ```
-
-We can manually examine yearly lag airquailty obtained by taking a difference with 365th lagged term.
 
 ```{r}
-yearly_lagged_PM2.5 <- diff(PM2.5, lag = 365)
+acf2(PM2.5_yearly_lagged, max.lag=100, main="Autocorrelation of Seasonality-Removed PM2.5")
 ```
 
+The ACF and PACF suggest that the the seasonality-removed PM2.5 still follows an AR(p) of some order p. Let's use AIC to find the optimal p. 
 
 ```{r}
-acf2(yearly_lagged_PM2.5, max.lag=100)
+VARselect(PM2.5_yearly_lagged, lag.max=50, type="const")
 ```
 
-ACF and PACF from the seanality removed series still suggest that the the PM2.5 follows AR(p) of some order p
+The AIC tells us that the seasonality-removed series follows an AR(5) instead of an AR(19). 
 
 ```{r}
-VARselect(yearly_lagged_PM2.5, lag.max=50, type="const")
+sarima(PM2.5_yearly_lagged, 5, 0, 0)
 ```
+This model ARIMA has a AIC of 12240.69, which is the best so far.
 
-The AIC tells that the seasonality removed series follows AR(p) of order only p = 5 instead of 19,
+# Forecasting
 
 ```{r}
-arima(yearly_lagged_PM2.5, order=c(5, 0, 0))
+pred <- sarima.for(
+  PM2.5_yearly_lagged, 
+  p=5, 
+  d=0, 
+  q=0, 
+  n.ahead=7,
+  main="7 Day Forecast of Year-over-Year Delta in PM2.5"
+)
 ```
-This model ARIMA has a AIC of 12240.69 and the best model so far.
 
-# TBATS model
-
-```{r}
-fit <- tbats(PM2.5)
-fit
-fit$AIC 
-```
-Creating BATS model, however in that model, the AIC is a lot bigger than the AR(19) with seasonality taken into account. BATS model is more generalized version of ARIMA just like ARMA is a generalization of AR and ARIMA is a generalization of ARMA. 
-
-BATS choose ARMA(2,1) but has a rather larger AIC = 22551.15.
-
-
-
-
-
-y <- msts(PM2.5, seasonal.periods=c(7,30.4375,365.25))
-fit <- tbats(y)
-fit
+Because the model was trained on the 365 day differenced data, a day's forecasted value represents its delta over that same day the previous year.  
