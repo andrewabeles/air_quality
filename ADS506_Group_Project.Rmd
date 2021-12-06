@@ -128,7 +128,7 @@ The optimal lag length is 19 by AIC.
 It is because ACF and PACF plots suggest the series follows ARMA(p, 0) for some order p, I looped through the estimation AR(p) with p = 1 to 25, and the A(p=19) has the smallest AIC. A better model has a smaller AIC (and also smaller BIC)
 
 ```{r}
-sarima(PM2.5, p=19, d=0, q=0)
+arima(PM2.5, order=c(19, 0, 0))
 ```
 
 The diagnostic plots for AR(19) show that the residuals have no significant autocorrelations, follow roughly normal, and all Ljung-Box statistics are larger than the threshold p-value. AR(19) seems to track the series well with the proper residuals.This model has AIC of 14075.71.
