@@ -208,4 +208,4 @@ pred <- sarima.for(
 )
 ```
 
-Because the model was trained on the 365 day differenced data, the a day's forecasted value represents its delta over that same day the previous year.  
+Because the model was trained on the 365 day differenced data, a day's forecasted value represents its delta over that same day the previous year.  
