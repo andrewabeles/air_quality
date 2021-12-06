@@ -143,10 +143,6 @@ sarima(PM2.5,
        p = 1, d = 0, q = 1, P = 0, 
        D = 1, Q = 0, S = 365.25)
 ```
-# ARIMA
-```{r}
-arima(PM2.5, order=c(19, 0, 0), xreg=year_dummies[,c("2017", "2018", "2019", "2020")])
-```
 
 we can manually examine yearly lag airquailty obtained by taking a differene with 365th lagged term.
 
