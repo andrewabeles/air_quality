@@ -154,19 +154,24 @@ sarima(PM2.5,
 We can manually examine yearly lag airquailty obtained by taking a difference with 365th lagged term.
 
 ```{r}
-acf2(PM2.5, max.lag=100)
+yearly_lagged_PM2.5 <- diff(PM2.5, lag = 365)
+```
+
+
+```{r}
+acf2(yearly_lagged_PM2.5, max.lag=100)
 ```
 
 ACF and PACF from the seanality removed series still suggest that the the PM2.5 follows AR(p) of some order p
 
 ```{r}
-VARselect(PM2.5, lag.max=50, type="const")
+VARselect(yearly_lagged_PM2.5, lag.max=50, type="const")
 ```
 
-The AIC tells that the seasnality removed series follows AR(p) of order only p = 5 instead of 19,
+The AIC tells that the seasonality removed series follows AR(p) of order only p = 5 instead of 19,
 
 ```{r}
-arima(PM2.5, order=c(5, 0, 0))
+arima(yearly_lagged_PM2.5, order=c(5, 0, 0))
 ```
 This model ARIMA has a AIC of 12240.69 and the best model so far.
 
