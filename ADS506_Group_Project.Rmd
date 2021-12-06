@@ -145,6 +145,7 @@ sarima(PM2.5,
 
 Alternatively, ARMA with yearly dummy:
 
+So, we include year dummy for 2017, 2018, .., 2020 in AR model to account for any difference in the intercept in AR model in different years. This is a way to do with sarima(..., P=1, D=0, Q=0, s=365.25) because s only takes less than 350
 
 ```{r}
 year_dummies <- dummy_cols(airquality$Year)
