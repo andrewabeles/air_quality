@@ -135,7 +135,7 @@ The diagnostic plots for AR(19) show that the residuals have no significant auto
 
 # Seasonal ARIMA
 
-The decomposition of the time series suggests that there is a daily seaonality in a year. 
+The decomposition of the time series suggests that there is a daily seaonality in a year. However, `sarima` does not allow for the seasonality of more than 350 frequency. Note that `S = 7` means that a weekly pattern and `S = 30` means a monthly patter. We try to see if a model with  monthly (seasonal) pattern works, and it does not.
 
 
 ```{r}
